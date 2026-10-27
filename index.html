@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>داشبورد جریان نقدی</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10); --chip: #f0efec;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+    --good: #0ca30c; --good-text: #006300; --warning: #fab219; --critical: #d03b3b;
+    --critical-wash: rgba(208,59,59,0.08); --warning-wash: rgba(250,178,25,0.14); --accent: #1c5cab;
+    --remind: #6250d6; --remind-wash: rgba(98,80,214,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --chip: #2c2c2a;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --good-text: #0ca30c;
+      --critical-wash: rgba(208,59,59,0.16); --warning-wash: rgba(250,178,25,0.12); --accent: #6da7ec;
+      --remind: #9085e9; --remind-wash: rgba(144,133,233,0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --chip: #2c2c2a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --good-text: #0ca30c;
+    --critical-wash: rgba(208,59,59,0.16); --warning-wash: rgba(250,178,25,0.12); --accent: #6da7ec;
+    --remind: #9085e9; --remind-wash: rgba(144,133,233,0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--page); color: var(--ink); font-family: "Vazirmatn", "Vazir", Tahoma, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 20px 16px 56px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  header.top h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .actions { display: flex; gap: 8px; }
+  button, select, input { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  button { cursor: pointer; } button:hover { border-color: var(--axis); }
+  button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .banner { display: none; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border); background: var(--surface); }
+  .banner.show { display: block; } .banner.error { border-color: var(--critical); background: var(--critical-wash); }
+  .filters { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; }
+  .filters label { display: flex; align-items: center; gap: 6px; color: var(--ink-2); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 6px 10px; background: transparent; color: var(--ink-2); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); margin-bottom: 14px; }
+  @media (min-width: 700px) { .kpis { grid-template-columns: repeat(4, 1fr); } }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .tile .label { color: var(--ink-2); font-size: 13px; }
+  .tile .value { font-size: 23px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
+  .tile .tnote { color: var(--muted); font-size: 12px; }
+  .tile.bad { border-color: var(--critical); background: var(--critical-wash); }
+  .tile.warn { border-color: var(--warning); background: var(--warning-wash); }
+  .neg { color: var(--critical); } .pos { color: var(--good-text); }
+  .grid2 { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 14px; }
+  @media (min-width: 980px) { .grid2 { grid-template-columns: 3fr 2fr; } .grid2.even { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-width: 0; margin-bottom: 14px; }
+  .grid2 > .card { margin-bottom: 0; }
+  .card h2 { font-size: 15px; margin: 0 0 2px; }
+  .card .desc { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--ink-2); font-size: 12px; margin-bottom: 4px; }
+  .sw { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: middle; margin-left: 6px; }
+  .sq { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: middle; margin-left: 6px; }
+  .chart { position: relative; width: 100%; }
+  .chart svg { display: block; width: 100%; overflow: visible; direction: ltr; }
+  .chart text { font-family: inherit; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); white-space: nowrap; display: none; z-index: 5; }
+  .tip b { display: block; margin-bottom: 2px; }
+  .notes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .note { border-radius: 10px; padding: 8px 12px; border: 1px solid var(--border); font-size: 13px; }
+  .note.crit { border-color: var(--critical); background: var(--critical-wash); }
+  .note.warn { border-color: var(--warning); background: var(--warning-wash); }
+  .note.info { background: var(--chip); }
+  .note strong { margin-left: 4px; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 7px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--ink-2); font-weight: 500; position: sticky; top: 0; background: var(--surface); }
+  td.num, th.num { text-align: left; font-variant-numeric: tabular-nums; direction: ltr; }
+  td.wrap-text { white-space: normal; min-width: 200px; }
+  tfoot td { font-weight: 700; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; background: var(--chip); font-size: 12px; }
+  .chip.late { background: var(--critical-wash); } .chip.late::before { content: "!"; color: var(--critical); font-weight: 700; }
+  .chip.over { background: var(--warning-wash); } .chip.over::before { content: "◷"; color: var(--warning); }
+  .chip.soon::before { content: "◷"; color: var(--muted); }
+  .chip.rem { background: var(--remind-wash); color: var(--ink); } .chip.rem::before { content: "●"; color: var(--remind); font-size: 9px; }
+  .empty { color: var(--muted); padding: 14px 0; text-align: center; }
+  .toolbar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 8px; }
+  .scroll-y { max-height: 420px; overflow-y: auto; }
+  dialog { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--ink); width: min(560px, calc(100vw - 32px)); padding: 18px; }
+  dialog::backdrop { background: rgba(0,0,0,0.4); }
+  dialog h3 { margin: 0 0 8px; }
+  dialog input[type=url] { width: 100%; direction: ltr; text-align: left; }
+  dialog ol { padding-right: 18px; margin: 8px 0; color: var(--ink-2); font-size: 13px; }
+  .row-end { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  @media (max-width: 480px) {
+    .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tile { padding: 10px 12px; } .tile .value { font-size: 17px; }
+    header.top h1 { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>داشبورد جریان نقدی</h1>
+      <div class="sub" id="sourceInfo">در حال بارگذاری…</div>
+    </div>
+    <div class="actions">
+      <button id="btnRefresh" type="button">↻ به‌روزرسانی</button>
+      <button id="btnSettings" type="button">⚙ تنظیمات</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" role="status"></div>
+
+  <section class="filters" aria-label="فیلترها">
+    <label>ماخذ <select id="fUnit"><option value="">همه ماخذها</option></select></label>
+    <label>افق
+      <select id="fHorizon">
+        <option value="3">۳ ماه</option><option value="6">۶ ماه</option>
+        <option value="12" selected>۱۲ ماه</option><option value="18">۱۸ ماه</option><option value="24">۲۴ ماه</option>
+      </select>
+    </label>
+    <label>سناریو
+      <span class="seg" id="fScenario">
+        <button type="button" data-v="1">فقط رویدادها</button>
+        <button type="button" data-v="2">+ برآورد نقدی</button>
+        <button type="button" data-v="3" class="on">+ اقساط برآوردی</button>
+      </span>
+    </label>
+    <label><input type="checkbox" id="fOverdue" checked> با معوق‌ها</label>
+  </section>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>مانده نقد پیش‌بینی‌شده، پایان هر ماه</h2>
+      <div class="desc">موجودی امروز + رویدادها + برآوردها (نقدی و اقساط). هر خط یک سناریو است؛ نقطه قرمز یعنی مانده منفی.</div>
+      <div class="legend" id="lgBalance"></div>
+      <div class="chart" id="chBalance"></div>
+    </div>
+    <div class="card">
+      <h2>یادآوری‌ها و نکات مهم</h2>
+      <div class="desc">هشدارهای خودکار و ردیف‌های «یادآوری». یادآوری‌ها هیچ اثری روی بودجه و پیش‌بینی نقد ندارند.</div>
+      <div class="notes" id="notes"></div>
+      <div class="scroll-y"><table id="tblRemind"></table></div>
+    </div>
+  </div>
+
+  <div class="grid2 even">
+    <div class="card">
+      <h2>ورودی و خروجی ماهانه</h2>
+      <div class="desc">در سناریوی انتخاب‌شده. سررسیدهای گذشته که هنوز تسویه نشده‌اند در ماه جاری آمده‌اند.</div>
+      <div class="legend"><span><span class="sq" style="background:var(--s1)"></span>ورودی</span><span><span class="sq" style="background:var(--s2)"></span>خروجی</span></div>
+      <div class="chart" id="chMonthly"></div>
+    </div>
+    <div class="card">
+      <h2>خروجی‌ها بر اساس سرفصل</h2>
+      <div class="desc">جمع خروجی در افق انتخاب‌شده</div>
+      <div class="chart" id="chCat"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>خلاصه ماخذها</h2>
+    <div class="desc">در افق و سناریوی انتخاب‌شده</div>
+    <div class="table-scroll"><table id="tblUnits"></table></div>
+  </div>
+
+  <div class="card">
+    <h2>سررسیدهای گذشته و ۳۰ روز آینده</h2>
+    <div class="desc">از شیت رویدادهای مالی. «سررسید گذشته» یعنی تاریخ رسیده ولی وضعیت هنوز «سررسید نشده» است؛ ورودی‌های سررسیدگذشته پررنگ‌اند.</div>
+    <div class="table-scroll scroll-y"><table id="tblDue"></table></div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <div><h2>ریز جریان‌ها</h2><div class="desc" id="txCount"></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="txLayer"><option value="">همه لایه‌ها</option></select>
+        <input type="search" id="txSearch" placeholder="جستجو در شرح، سرفصل، ماخذ…">
+      </div>
+    </div>
+    <div class="table-scroll scroll-y"><table id="tblTx"></table></div>
+  </div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<dialog id="dlg">
+  <h3>اتصال به داده</h3>
+  <ol>
+    <li>فایل «بودجه نقدی» را در Google Sheets باز کنید.</li>
+    <li>File ← Share ← Publish to web؛ برگه «داده داشبورد» و قالب Comma-separated values (.csv) را انتخاب و Publish کنید.</li>
+    <li>لینک ساخته‌شده را این‌جا بچسبانید.</li>
+  </ol>
+  <input type="url" id="inpUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=0&single=true&output=csv">
+  <div class="hint">لینک فقط در همین مرورگر ذخیره می‌شود، نه در فایل سایت. روی هر دستگاه یک بار وارد کنید.</div>
+  <div class="row-end">
+    <button class="primary" id="btnSave" type="button">ذخیره و بارگذاری</button>
+    <button id="btnDemo" type="button">داده نمونه</button>
+    <button id="btnClose" type="button">بستن</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+/* اگر می‌خواهید لینک CSV همیشه پیش‌فرض باشد، این‌جا بنویسید. برای سایت عمومی بهتر است خالی بماند. */
+const CONFIG = { CSV_URL: "", REFRESH_MIN: 5, DUE_DAYS: 30, DATA_GID: "15" };   // gid برگه «داده داشبورد»
+const LS_KEY = "cashflow_csv_url_v3";
+const MONTHS = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+const LAYER_ORDER = ["قطعی","معوق","برآورد نقدی","اقساط برآوردی","یادآوری","موجودی"];
+let ALL = [], memUrl = null, isDemo = false, scenario = 3;
+
+/* ---------- ابزار ---------- */
+const FA = "۰۱۲۳۴۵۶۷۸۹", AR = "٠١٢٣٤٥٦٧٨٩";
+const en = s => String(s ?? "").replace(/[۰-۹]/g, d => FA.indexOf(d)).replace(/[٠-٩]/g, d => AR.indexOf(d));
+const clean = s => en(s).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, " ").trim();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Math.round(n).toLocaleString("fa-IR");
+const faN = n => Number(n).toLocaleString("fa-IR", { useGrouping: false });
+function short(n) {
+  const a = Math.abs(n), s = n < 0 ? "−" : "", f = v => v.toLocaleString("fa-IR", { maximumFractionDigits: 1 });
+  if (a >= 1e12) return s + f(a / 1e12) + " هزار میلیارد";
+  if (a >= 1e9) return s + f(a / 1e9) + " میلیارد";
+  if (a >= 1e6) return s + f(a / 1e6) + " میلیون";
+  return s + Math.round(a).toLocaleString("fa-IR");
+}
+function axisShort(n) {
+  const a = Math.abs(n), s = n < 0 ? "−" : "";
+  if (a >= 1e9) return s + (a / 1e9).toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + " م‌د";
+  if (a >= 1e6) return s + (a / 1e6).toLocaleString("fa-IR", { maximumFractionDigits: 0 }) + " م";
+  return s + Math.round(a).toLocaleString("fa-IR");
+}
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const ymLabel = ym => MONTHS[(ym % 100) - 1] + " " + faN(Math.floor(ym / 100) % 100);
+const ymLong = ym => MONTHS[(ym % 100) - 1] + " " + faN(Math.floor(ym / 100));
+const dStr = r => faN(r.y) + "/" + faN(String(r.m).padStart(2, "0")).padStart(2, "۰") + "/" + faN(String(r.d).padStart(2, "0")).padStart(2, "۰");
+const kStr = k => dStr({ y: Math.floor(k / 10000), m: Math.floor(k / 100) % 100, d: k % 100 });
+function addMonths(ym, k) { let y = Math.floor(ym / 100), m = ym % 100 - 1 + k; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return y * 100 + m + 1; }
+
+function g2j(gy, gm, gd) {
+  const gdm = [0,31,59,90,120,151,181,212,243,273,304,334];
+  let jy = gy <= 1600 ? 0 : 979; gy -= gy <= 1600 ? 621 : 1600;
+  const gy2 = gm > 2 ? gy + 1 : gy;
+  let days = 365 * gy + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + gdm[gm - 1];
+  jy += 33 * Math.floor(days / 12053); days %= 12053;
+  jy += 4 * Math.floor(days / 1461); days %= 1461;
+  if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+  const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+  const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
+  return [jy, jm, jd];
+}
+function jKey(date) { const [y, m, d] = g2j(date.getFullYear(), date.getMonth() + 1, date.getDate()); return y * 10000 + m * 100 + d; }
+
+/* ---------- خواندن CSV ---------- */
+function parseCSV(text) {
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n") { row.push(f); rows.push(row); row = []; f = ""; }
+    else if (c !== "\r") f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+function parseDate(s) {
+  const p = en(s).trim().split(/[\/\-.]/).map(x => parseInt(x, 10));
+  if (p.length < 3 || p.some(isNaN) || p[0] < 1300) return null;
+  const [y, m, d] = p; if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  return { y, m, d, k: y * 10000 + m * 100 + d, ym: y * 100 + m };
+}
+function cleanDesc(s) {
+  return clean(s).replace(/\s-\s+-\s/g, " - ").replace(/^-\s*/, "").replace(/\s-\s*$/, "").trim();
+}
+/* تاریخ شمسی ← میلادی (الگوریتم جلالی) */
+function j2g(jy, jm, jd) {
+  jy += 1595;
+  let days = -355668 + 365 * jy + Math.floor(jy / 33) * 8 + Math.floor(((jy % 33) + 3) / 4) + jd + (jm < 7 ? (jm - 1) * 31 : (jm - 7) * 30 + 186);
+  let gy = 400 * Math.floor(days / 146097); days %= 146097;
+  if (days > 36524) { gy += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
+  gy += 4 * Math.floor(days / 1461); days %= 1461;
+  if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+  let gd = days + 1; const leap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
+  const sal = [0, 31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; let gm;
+  for (gm = 0; gm < 13 && gd > sal[gm]; gm++) gd -= sal[gm];
+  return [gy, gm, gd];
+}
+const DAY = 86400000;
+const jDayNum = (y, m, d) => { const [a, b, c] = j2g(y, m, d); return Math.round(Date.UTC(a, b - 1, c) / DAY); };
+function fromDayNum(n) { const t = new Date(n * DAY); const [y, m, d] = g2j(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()); return { y, m, d, k: y * 10000 + m * 100 + d, ym: y * 100 + m }; }
+const todayNum = () => { const t = new Date(); return Math.round(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()) / DAY); };
+const num = s => { const v = parseFloat(en(s).replace(/[,\s٬،]/g, "")); return isNaN(v) ? NaN : v; };
+
+/* برآورد ماهانه ← نوبت‌های نقدی و اقساط (همان منطق شیت «جدول برآورد») */
+function expandEstimate(e, tNum) {
+  const p = en(e.month).split(/[\/\-]/).map(x => parseInt(x, 10)); const Y = p[0], M = p[1];
+  if (!Y || !M || !(e.amt > 0)) return [];
+  const start = jDayNum(Y, M, 1), len = (M === 12 ? jDayNum(Y + 1, 1, 1) : jDayNum(Y, M + 1, 1)) - start;
+  const f = e.freq >= 1 ? Math.floor(e.freq) : 1, cnt = Math.floor((len - 1) / f) + 1, per = e.amt / cnt;
+  const n = e.inst >= 1 ? Math.floor(e.inst) : 0, cash = n ? (isNaN(e.cash) ? 0 : e.cash / 100) : 1;
+  const gap = e.gap >= 1 ? Math.floor(e.gap) : 30, out = [];
+  const base = { unit: e.unit, type: e.type, cat: e.cat, method: "", src: "برآورد " + e.month };
+  for (let j = 0; j < cnt; j++) {
+    const d = start + j * f;
+    if (cash > 0 && d >= tNum) out.push({ ...fromDayNum(d), ...base, desc: (e.desc ? e.desc + " · " : "") + "برآورد " + ymLong(Y * 100 + M) + (cash < 1 ? " (نقدی)" : ""), amt: per * cash, layer: "برآورد نقدی" });
+    for (let k = 1; k <= n; k++) { const dk = d + k * gap; if (dk >= tNum) out.push({ ...fromDayNum(dk), ...base, desc: (e.desc ? e.desc + " · " : "") + "قسط " + faN(k) + " از " + faN(n) + " برآورد " + ymLong(Y * 100 + M), amt: per * (1 - cash) / n, layer: "اقساط برآوردی" }); }
+  }
+  return out;
+}
+
+function rowsFromCSV(text) {
+  const data = parseCSV(text), out = [], tNum = todayNum(); let skipped = 0, seen = 0;
+  for (let i = 0; i < data.length; i++) {
+    const r = data[i]; if (!r || !r.length) continue;
+    const sec = clean(r[0]); if (!sec || sec === "بخش") continue;
+    seen++;
+    if (sec === "خلاصه") continue;
+    if (sec === "حساب") {
+      const amt = num(r[7]); if (isNaN(amt) && clean(r[7]) !== "-") { skipped++; continue; }
+      const tk = jKey(new Date());
+      out.push({ y: Math.floor(tk / 10000), m: Math.floor(tk / 100) % 100, d: tk % 100, k: tk, ym: Math.floor(tk / 100),
+        unit: clean(r[2]) || "نامشخص", type: "موجودی", cat: clean(r[4]) || "حساب", desc: clean(r[6]), amt: isNaN(amt) ? 0 : amt, layer: "موجودی", method: "", src: clean(r[1]) });
+      continue;
+    }
+    if (sec === "رویداد") {
+      const dt = parseDate(r[1]), amt = num(r[7]), type = clean(r[3]), st = clean(r[9]), place = clean(r[11]);
+      if (["وصول یا پرداخت شده", "وصول شده", "پرداخت شده", "انجام شده", "لغو شده", "خرج شده"].includes(st) || place === "خرج شده" || place === "مسترد شد") continue;   // فقط ردیف‌های باز اثر دارند
+      const remind = type === "یادآوری" || type === "تضمین";
+      if (!dt || (!remind && (isNaN(amt) || !type))) { skipped++; continue; }
+      out.push({ ...dt, unit: clean(r[2]) || "نامشخص", type, cat: clean(r[4]) || "بدون سرفصل",
+        desc: cleanDesc([clean(r[5]), clean(r[6])].filter(Boolean).join(" - ")), amt: Math.abs(isNaN(amt) ? 0 : amt),
+        layer: remind ? "یادآوری" : st === "معوق" ? "معوق" : "قطعی", method: clean(r[8]), src: st || "سررسید نشده", party: clean(r[5]), cheque: clean(r[10]) });
+      continue;
+    }
+    if (sec === "برآورد") {
+      if (clean(r[9]) === "لغو شده") continue;
+      const e = { month: clean(r[1]), unit: clean(r[2]) || "نامشخص", type: clean(r[3]), cat: clean(r[4]) || "بدون سرفصل", desc: clean(r[6]),
+        amt: num(r[7]), freq: num(r[10]), cash: num(r[11]), inst: num(r[12]), gap: num(r[13]) };
+      if (!/^\d{4}\/\d{1,2}$/.test(e.month) || isNaN(e.amt)) { skipped++; continue; }
+      out.push(...expandEstimate(e, tNum));
+      continue;
+    }
+  }
+  return { rows: out, skipped, seen };
+}
+
+/* ---------- داده نمونه ---------- */
+function demoRows() {
+  const t = jKey(new Date()), Y = Math.floor(t / 10000), M = Math.floor(t / 100) % 100;
+  const units = ["دفتر مرکزی","پروژه صدرا","کارخانه صدرا سازه","فروشگاه دکور"], rows = [];
+  const mk = (k, unit, type, cat, desc, amt, layer, method = "") => { const y = Math.floor(k / 10000), m = Math.floor(k / 100) % 100, d = k % 100; rows.push({ y, m, d, k, ym: y * 100 + m, unit, type, cat, desc, amt, layer, method, src: "نمونه" }); };
+  const day = (i, d) => { const ym = addMonths(Y * 100 + M, i); return ym * 100 + d; };
+  [6e9, 3e9, 1.5e9, 4e8].forEach((a, i) => mk(t, units[i], "موجودی", "موجودی نقد", "مانده حساب‌ها", a, "موجودی"));
+  for (let i = 0; i < 12; i++) {
+    mk(day(i, 5), "فروشگاه دکور", "خروجی", "پرداخت اجاره", "اجاره فروشگاه", 4.7e9, "قطعی", "چک");
+    mk(day(i, 1), "فروشگاه دکور", "ورودی", "فروش مبلمان", "برآورد فروش (نقدی)", 3.6e9 + i * 1e8, "برآورد نقدی");
+    if (i > 0) mk(day(i, 1), "فروشگاه دکور", "ورودی", "فروش مبلمان", "قسط برآورد فروش", 2.4e9, "اقساط برآوردی");
+    mk(day(i, 10), "کارخانه صدرا سازه", "ورودی", "فروش مبلمان", "وصول چک نمایندگی", 3e9, "قطعی", "چک");
+    mk(day(i, 28), "دفتر مرکزی", "خروجی", "پرداخت حقوق", "حقوق ماه", 2.2e9, "برآورد نقدی", "حساب");
+    if (i < 4) mk(day(i, 15), "پروژه صدرا", "خروجی", "خرید مواد و مصالح", "خرید مصالح", 7e9, "قطعی", "چک");
+    if (i % 2 === 0) mk(day(i, 20), "کارخانه صدرا سازه", "خروجی", "پرداخت پیمانکاران", "صورت وضعیت پیمانکار", 1.2e9, "قطعی", "چک");
+  }
+  mk(t, "دفتر مرکزی", "خروجی", "سایر هزینه‌ها", "سررسید گذشته - قسط بیمه", 9.5e7, "معوق", "حساب");
+  mk(day(1, 12), "پروژه صدرا", "یادآوری", "یادآوری عمومی", "تمدید قرارداد پیمانکار", 0, "یادآوری");
+  return rows;
+}
+
+/* ---------- محاسبات ---------- */
+const flowLayers = sc => { const s = ["قطعی"]; if (sc >= 2) s.push("برآورد نقدی"); if (sc >= 3) s.push("اقساط برآوردی"); if (document.getElementById("fOverdue").checked) s.push("معوق"); return s; };
+const isFlow = r => r.type === "ورودی" || r.type === "خروجی";
+const sign = r => r.type === "خروجی" ? -1 : 1;
+
+function compute() {
+  const unit = document.getElementById("fUnit").value;
+  const H = +document.getElementById("fHorizon").value;
+  const todayK = jKey(new Date()), curYM = Math.floor(todayK / 100);
+  const months = Array.from({ length: H }, (_, i) => addMonths(curYM, i));
+  const lastYM = months[months.length - 1];
+  const rows = ALL.filter(r => !unit || r.unit === unit);
+  const bal = rows.filter(r => r.layer === "موجودی").reduce((s, r) => s + r.amt, 0);
+  const balRows = rows.filter(r => r.layer === "موجودی");
+  const bucket = r => Math.max(r.ym, curYM);
+  const inHorizon = r => bucket(r) <= lastYM;
+  const series = sc => {
+    const L = flowLayers(sc); let run = bal;
+    return months.map(ym => {
+      rows.forEach(r => { if (isFlow(r) && L.includes(r.layer) && bucket(r) === ym) run += sign(r) * r.amt; });
+      return run;
+    });
+  };
+  const sel = flowLayers(scenario);
+  const selRows = rows.filter(r => isFlow(r) && sel.includes(r.layer) && inHorizon(r));
+  const daily = (() => {   // مانده روزانه در سناریوی انتخاب‌شده؛ سررسیدگذشته‌ها در امروز
+    const ek = r => Math.max(r.k, todayK), by = new Map();
+    selRows.forEach(r => by.set(ek(r), (by.get(ek(r)) || 0) + sign(r) * r.amt));
+    let run = bal, min = { v: bal, k: todayK }, neg = null;
+    [...by.keys()].sort((a, b) => a - b).forEach(k => { run += by.get(k); if (run < min.v) min = { v: run, k }; if (run < 0 && !neg) neg = { v: run, k }; });
+    return { min, neg };
+  })();
+  return { unit, H, todayK, curYM, months, rows, bal, balRows, bucket, selRows, daily,
+    lines: [series(1), series(2), series(3)] };
+}
+
+/* ---------- رسم ---------- */
+function render() {
+  const C = compute();
+  renderKpis(C); renderBalance(C); renderNotes(C); renderMonthly(C); renderCat(C);
+  renderUnits(C); renderDue(C); renderTx();
+}
+
+function renderKpis(C) {
+  const line = C.lines[scenario - 1];
+  const tin = C.selRows.filter(r => r.type === "ورودی").reduce((s, r) => s + r.amt, 0);
+  const tout = C.selRows.filter(r => r.type === "خروجی").reduce((s, r) => s + r.amt, 0);
+  let mi = 0; line.forEach((v, i) => { if (v < line[mi]) mi = i; });
+  const neg = line.findIndex(v => v < 0);
+  const ov = C.rows.filter(r => r.layer === "معوق");
+  const ovOut = ov.filter(r => r.type === "خروجی").reduce((s, r) => s + r.amt, 0);
+  const ovIn = ov.filter(r => r.type === "ورودی").reduce((s, r) => s + r.amt, 0);
+  const late = C.rows.filter(r => isFlow(r) && r.layer === "قطعی" && r.k < C.todayK);
+  const rem = C.rows.filter(r => r.layer === "یادآوری").length;
+  const tiles = [
+    { l: "موجودی نقد امروز", v: short(C.bal), n: C.bal === 0 ? "مانده حساب‌ها ثبت نشده" : "از شیت موجودی روزانه", cls: C.bal === 0 ? "warn" : (C.bal < 0 ? "bad" : ""), t: fmt(C.bal) },
+    { l: "ورودی پیش رو", v: short(tin), n: "افق " + faN(C.H) + " ماه", t: fmt(tin), sw: "--s1" },
+    { l: "خروجی پیش رو", v: short(tout), n: "افق " + faN(C.H) + " ماه", t: fmt(tout), sw: "--s2" },
+    { l: "کمترین مانده روزانه", v: short(C.daily.min.v), n: kStr(C.daily.min.k), cls: C.daily.min.v < 0 ? "bad" : "", t: fmt(C.daily.min.v), neg: C.daily.min.v < 0 },
+    { l: "اولین روز کسری", v: C.daily.neg ? kStr(C.daily.neg.k) : "ندارد", n: C.daily.neg ? "کسری " + short(C.daily.neg.v) : "در این سناریو و افق", cls: C.daily.neg ? "bad" : "" },
+    { l: "معوق‌ها", v: short(ovOut + ovIn), n: "پرداختنی " + short(ovOut) + (ovIn ? " · دریافتنی " + short(ovIn) : ""), cls: ov.length ? "warn" : "", t: fmt(ovOut + ovIn) },
+    { l: "سررسید گذشته، به‌روزنشده", v: faN(late.length) + " ردیف", n: short(late.reduce((s, r) => s + r.amt, 0)), cls: late.length ? "warn" : "" },
+    { l: "یادآوری‌ها", v: faN(rem) + " مورد", n: "در بخش یادآوری‌ها" }
+  ];
+  document.getElementById("kpis").innerHTML = tiles.map(t => `
+    <div class="tile ${t.cls || ""}" ${t.t ? `title="${t.t} ریال"` : ""}>
+      <div class="label">${t.sw ? `<span class="sq" style="background:var(${t.sw})"></span>` : ""}${t.l}</div>
+      <div class="value ${t.neg ? "neg" : ""}">${t.v}</div>
+      <div class="tnote">${t.n}</div>
+    </div>`).join("");
+}
+
+/* -- نمودار خطی مانده -- */
+function niceTicks(min, max, n = 5) {
+  if (min === max) { min -= 1; max += 1; }
+  const span = max - min, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => s >= step0);
+  const lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step, t = [];
+  for (let v = lo; v <= hi + step / 2; v += step) t.push(Math.round(v));
+  return t;
+}
+const tip = document.getElementById("tip");
+function showTip(host, x, y, html) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const hb = host.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let left = hb.left + window.scrollX + x - tw / 2;
+  left = Math.max(8 + window.scrollX, Math.min(left, window.scrollX + document.documentElement.clientWidth - tw - 8));
+  tip.style.left = left + "px"; tip.style.top = (hb.top + window.scrollY + y - th - 12) + "px";
+}
+const hideTip = () => tip.style.display = "none";
+
+function renderBalance(C) {
+  const host = document.getElementById("chBalance");
+  const names = ["فقط رویدادها", "رویدادها + برآورد نقدی", "+ اقساط برآوردی"], cols = [css("--s1"), css("--s2"), css("--s3")];
+  document.getElementById("lgBalance").innerHTML = names.map((n, i) =>
+    `<span style="${i + 1 === scenario ? "font-weight:700;color:var(--ink)" : ""}"><span class="sw" style="background:${cols[i]};height:${i + 1 === scenario ? 4 : 2}px"></span>${n}</span>`).join("")
+    + (document.getElementById("fOverdue").checked ? `<span>· معوق‌ها لحاظ شده</span>` : "");
+  const W = Math.max(host.clientWidth, 300), Hh = 280, P = { t: 14, r: 58, b: 30, l: 12 };
+  const all = C.lines.flat().concat([0, C.bal]);
+  const ticks = niceTicks(Math.min(...all), Math.max(...all));
+  const y0 = ticks[0], y1 = ticks[ticks.length - 1];
+  const n = C.months.length, iw = W - P.l - P.r, ih = Hh - P.t - P.b;
+  const X = i => W - P.r - (n === 1 ? iw / 2 : i * iw / (n - 1));   // راست‌به‌چپ
+  const Y = v => P.t + ih - (v - y0) / (y1 - y0) * ih;
+  let s = `<svg viewBox="0 0 ${W} ${Hh}" height="${Hh}" role="img" aria-label="نمودار مانده نقد پیش‌بینی‌شده">`;
+  ticks.forEach(t => {
+    s += `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t === 0 ? css("--axis") : css("--grid")}" stroke-width="${t === 0 ? 1.5 : 1}"/>`;
+    s += `<text x="${W - P.r + 8}" y="${Y(t) + 4}" font-size="11" fill="${css("--muted")}" text-anchor="start">${axisShort(t)}</text>`;
+  });
+  const every = n > 12 ? 3 : n > 6 ? 2 : 1;
+  C.months.forEach((m, i) => { if (i % every === 0) s += `<text x="${X(i)}" y="${Hh - 8}" font-size="11" fill="${css("--muted")}" text-anchor="middle">${ymLabel(m)}</text>`; });
+  [0, 1, 2].forEach(k => {
+    const on = k + 1 === scenario;
+    const pts = C.lines[k].map((v, i) => `${X(i)},${Y(v)}`).join(" ");
+    s += `<polyline points="${pts}" fill="none" stroke="${cols[k]}" stroke-width="${on ? 2.5 : 1.5}" stroke-opacity="${on ? 1 : 0.55}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  const sl = C.lines[scenario - 1];
+  sl.forEach((v, i) => { s += `<circle cx="${X(i)}" cy="${Y(v)}" r="${v < 0 ? 4.5 : 3}" fill="${v < 0 ? css("--critical") : cols[scenario - 1]}" stroke="${css("--surface")}" stroke-width="1.5"/>`; });
+  s += `<line id="bxh" x1="0" x2="0" y1="${P.t}" y2="${P.t + ih}" stroke="${css("--axis")}" stroke-dasharray="3 3" visibility="hidden"/>`;
+  s += `<rect x="${P.l}" y="${P.t}" width="${iw}" height="${ih}" fill="transparent" id="bhit"/></svg>`;
+  host.innerHTML = s;
+  const hit = host.querySelector("#bhit"), xh = host.querySelector("#bxh");
+  const move = e => {
+    const r = host.getBoundingClientRect(), sx = (e.clientX - r.left) * (W / r.width);
+    let i = Math.round((W - P.r - sx) / (n === 1 ? 1 : iw / (n - 1))); i = Math.max(0, Math.min(n - 1, i));
+    xh.setAttribute("x1", X(i)); xh.setAttribute("x2", X(i)); xh.setAttribute("visibility", "visible");
+    const html = `<b>${ymLong(C.months[i])}</b>` + [0, 1, 2].map(k => `<div><span class="sw" style="background:${cols[k]}"></span>${names[k]}: <span class="${C.lines[k][i] < 0 ? "neg" : ""}">${short(C.lines[k][i])}</span></div>`).join("");
+    showTip(host, X(i) * r.width / W, Math.min(...C.lines.map(l => Y(l[i]))) * r.height / Hh, html);
+  };
+  hit.addEventListener("mousemove", move); hit.addEventListener("touchstart", e => move(e.touches[0]), { passive: true });
+  hit.addEventListener("mouseleave", () => { hideTip(); xh.setAttribute("visibility", "hidden"); });
+}
+
+/* -- ستونی ماهانه -- */
+function renderMonthly(C) {
+  const host = document.getElementById("chMonthly");
+  const inn = C.months.map(m => C.selRows.filter(r => r.type === "ورودی" && C.bucket(r) === m).reduce((s, r) => s + r.amt, 0));
+  const out = C.months.map(m => C.selRows.filter(r => r.type === "خروجی" && C.bucket(r) === m).reduce((s, r) => s + r.amt, 0));
+  const W = Math.max(host.clientWidth, 300), Hh = 250, P = { t: 10, r: 58, b: 30, l: 8 };
+  const ticks = niceTicks(0, Math.max(1, ...inn, ...out), 4), y1 = ticks[ticks.length - 1];
+  const n = C.months.length, iw = W - P.l - P.r, ih = Hh - P.t - P.b, slot = iw / n;
+  const bw = Math.max(3, Math.min(18, slot * 0.36)), gap = 2;
+  const Y = v => P.t + ih - v / y1 * ih;
+  let s = `<svg viewBox="0 0 ${W} ${Hh}" height="${Hh}" role="img" aria-label="نمودار ورودی و خروجی ماهانه">`;
+  ticks.forEach(t => {
+    s += `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t === 0 ? css("--axis") : css("--grid")}"/>`;
+    s += `<text x="${W - P.r + 8}" y="${Y(t) + 4}" font-size="11" fill="${css("--muted")}">${axisShort(t)}</text>`;
+  });
+  const every = n > 12 ? 3 : n > 6 ? 2 : 1;
+  const bar = (x, v, col) => { if (v <= 0) return ""; const h = Math.max(1, ih * v / y1), y = P.t + ih - h, r = Math.min(4, bw / 2, h);
+    return `<path d="M${x},${y + h} V${y + r} Q${x},${y} ${x + r},${y} H${x + bw - r} Q${x + bw},${y} ${x + bw},${y + r} V${y + h} Z" fill="${col}"/>`; };
+  C.months.forEach((m, i) => {
+    const cx = W - P.r - slot * (i + 0.5);
+    s += bar(cx + gap / 2, inn[i], css("--s1")) + bar(cx - bw - gap / 2, out[i], css("--s2"));
+    if (i % every === 0) s += `<text x="${cx}" y="${Hh - 8}" font-size="11" fill="${css("--muted")}" text-anchor="middle">${ymLabel(m)}</text>`;
+    s += `<rect class="hitm" data-i="${i}" x="${cx - slot / 2}" y="${P.t}" width="${slot}" height="${ih}" fill="transparent"/>`;
+  });
+  host.innerHTML = s + "</svg>";
+  host.querySelectorAll(".hitm").forEach(el => {
+    const f = e => { const i = +el.dataset.i, r = host.getBoundingClientRect(), cx = W - P.r - slot * (i + 0.5);
+      showTip(host, cx * r.width / W, Y(Math.max(inn[i], out[i])) * r.height / Hh,
+        `<b>${ymLong(C.months[i])}</b><div><span class="sq" style="background:var(--s1)"></span>ورودی: ${short(inn[i])}</div><div><span class="sq" style="background:var(--s2)"></span>خروجی: ${short(out[i])}</div><div>خالص: <span class="${inn[i] - out[i] < 0 ? "neg" : ""}">${short(inn[i] - out[i])}</span></div>`); };
+    el.addEventListener("mousemove", f); el.addEventListener("mouseleave", hideTip);
+    el.addEventListener("touchstart", e => f(e.touches[0]), { passive: true });
+  });
+}
+
+/* -- میله‌ای افقی سرفصل -- */
+function renderCat(C) {
+  const host = document.getElementById("chCat");
+  const by = {}; C.selRows.filter(r => r.type === "خروجی").forEach(r => by[r.cat] = (by[r.cat] || 0) + r.amt);
+  let items = Object.entries(by).sort((a, b) => b[1] - a[1]);
+  if (items.length > 8) { const rest = items.slice(7).reduce((s, x) => s + x[1], 0); items = items.slice(0, 7).concat([["سایر سرفصل‌ها", rest]]); }
+  if (!items.length) { host.innerHTML = `<div class="empty">خروجی‌ای در این افق نیست</div>`; return; }
+  const total = items.reduce((s, x) => s + x[1], 0), max = items[0][1];
+  const W = Math.max(host.clientWidth, 280), rowH = 30, labW = Math.min(150, W * 0.36), valW = 120, Hh = items.length * rowH + 6;
+  let s = `<svg viewBox="0 0 ${W} ${Hh}" height="${Hh}" role="img" aria-label="خروجی بر اساس سرفصل">`;
+  items.forEach(([k, v], i) => {
+    const y = i * rowH + 4, bwMax = W - labW - valW - 8, w = Math.max(2, v / max * bwMax), x0 = W - labW;
+    s += `<text x="${W}" y="${y + 15}" font-size="12" fill="${css("--ink-2")}" text-anchor="end">${esc(k.length > 22 ? k.slice(0, 21) + "…" : k)}</text>`;
+    s += `<rect x="${x0 - w - 6}" y="${y + 4}" width="${w}" height="16" rx="4" fill="${css("--s2")}"><title>${esc(k)}: ${fmt(v)} ریال</title></rect>`;
+    s += `<text x="${x0 - w - 12}" y="${y + 16}" font-size="11" fill="${css("--muted")}" text-anchor="end">${faN(Math.round(v / total * 100))}٪ · ${short(v)}</text>`;
+  });
+  host.innerHTML = s + "</svg>";
+}
+
+/* -- یادآوری‌ها و نکات -- */
+function renderNotes(C) {
+  const notes = [], line = C.lines[scenario - 1];
+  const negM = C.months.filter((m, i) => line[i] < 0);
+  if (negM.length) notes.push(["crit", "کسری نقدینگی:", `در ${faN(negM.length)} ماه از افق، مانده منفی است؛ اولین بار ${ymLong(negM[0])} (${short(line[C.months.indexOf(negM[0])])}).`]);
+  if (C.bal === 0) notes.push(["warn", "موجودی ثبت نشده:", "مانده حساب‌ها در شیت «موجودی روزانه» صفر است؛ پیش‌بینی از صفر شروع شده."]);
+  const late = C.rows.filter(r => isFlow(r) && r.layer === "قطعی" && r.k < C.todayK);
+  if (late.length) notes.push(["warn", "سررسید گذشته:", `${faN(late.length)} ردیف به مبلغ ${short(late.reduce((s, r) => s + r.amt, 0))} تاریخشان گذشته ولی وضعیتشان هنوز «سررسید نشده» است. در «رویدادهای مالی» به‌روز شوند؛ تا آن موقع در امروز حساب می‌شوند.`]);
+  const ov = C.rows.filter(r => r.layer === "معوق");
+  if (ov.length) notes.push(["warn", "معوق:", `${faN(ov.length)} ردیف معوق به مبلغ ${short(ov.reduce((s, r) => s + r.amt, 0))}.`]);
+  const inst = C.selRows.filter(r => r.layer === "اقساط برآوردی").reduce((s, r) => s + (r.type === "ورودی" ? r.amt : -r.amt), 0);
+  if (inst) notes.push(["info", "اقساط برآوردی:", `خالص ${short(inst)} از اقساط برآوردها در این افق آمده است.`]);
+  document.getElementById("notes").innerHTML = notes.map(n => `<div class="note ${n[0]}"><strong>${n[1]}</strong>${esc(n[2])}</div>`).join("") || `<div class="note info">هشداری نیست.</div>`;
+  const rem = C.rows.filter(r => r.layer === "یادآوری").sort((a, b) => a.k - b.k);
+  document.getElementById("tblRemind").innerHTML = rem.length ? `
+    <thead><tr><th>تاریخ</th><th>نوع</th><th>ماخذ</th><th>شرح</th><th class="num">مبلغ</th></tr></thead>
+    <tbody>${rem.map(r => `<tr>
+      <td>${dStr(r)}${r.k < C.todayK ? ' <span class="chip late">گذشته</span>' : ""}</td>
+      <td><span class="chip rem">${esc(r.type || "یادآوری")}</span></td>
+      <td>${esc(r.unit)}</td>
+      <td class="wrap-text">${esc(r.desc || r.cat)}</td>
+      <td class="num">${r.amt ? short(r.amt) + " (فقط یادداشت)" : "—"}</td></tr>`).join("")}</tbody>`
+    : `<tbody><tr><td class="empty">یادآوری‌ای ثبت نشده.</td></tr></tbody>`;
+}
+
+/* -- جدول ماخذها -- */
+function renderUnits(C) {
+  const units = [...new Set(C.rows.filter(r => r.layer !== "یادآوری").map(r => r.unit))].sort();
+  const data = units.map(u => {
+    const b = C.balRows.filter(r => r.unit === u).reduce((s, r) => s + r.amt, 0);
+    const rs = C.selRows.filter(r => r.unit === u);
+    const i = rs.filter(r => r.type === "ورودی").reduce((s, r) => s + r.amt, 0);
+    const o = rs.filter(r => r.type === "خروجی").reduce((s, r) => s + r.amt, 0);
+    return { u, b, i, o, e: b + i - o };
+  });
+  const T = data.reduce((a, d) => ({ b: a.b + d.b, i: a.i + d.i, o: a.o + d.o, e: a.e + d.e }), { b: 0, i: 0, o: 0, e: 0 });
+  const tr = (n, d) => `<tr><td>${esc(n)}</td><td class="num">${fmt(d.b)}</td><td class="num">${fmt(d.i)}</td><td class="num">${fmt(d.o)}</td><td class="num ${d.e < 0 ? "neg" : ""}">${fmt(d.e)}</td></tr>`;
+  document.getElementById("tblUnits").innerHTML = data.length ? `
+    <thead><tr><th>ماخذ</th><th class="num">موجودی امروز</th><th class="num">ورودی</th><th class="num">خروجی</th><th class="num">مانده پایان افق</th></tr></thead>
+    <tbody>${data.map(d => tr(d.u, d)).join("")}</tbody><tfoot>${tr("جمع (ریال)", T)}</tfoot>`
+    : `<tbody><tr><td class="empty">داده‌ای نیست</td></tr></tbody>`;
+}
+
+/* -- سررسیدها -- */
+function renderDue(C) {
+  const until = new Date(); until.setDate(until.getDate() + CONFIG.DUE_DAYS); const uK = jKey(until);
+  const items = C.rows.filter(r => isFlow(r) && ["قطعی", "معوق"].includes(r.layer) && r.k <= uK).sort((a, b) => a.k - b.k);
+  const chip = r => r.layer === "معوق" && r.k < C.todayK && r.type === "ورودی" ? '<span class="chip over">معوق</span> <span class="chip late">دریافتنی گذشته</span>' : r.layer === "معوق" ? '<span class="chip over">معوق</span>' : r.k < C.todayK ? '<span class="chip late">سررسید گذشته</span>' : '<span class="chip soon">پیش رو</span>';
+  document.getElementById("tblDue").innerHTML = items.length ? `
+    <thead><tr><th>تاریخ</th><th>وضعیت</th><th>ماخذ</th><th>سرفصل</th><th>شرح</th><th>روش</th><th>شماره چک</th><th class="num">مبلغ (ریال)</th></tr></thead>
+    <tbody>${items.map(r => `<tr><td>${dStr(r)}</td><td>${chip(r)}</td><td>${esc(r.unit)}</td><td>${esc(r.cat)}</td><td class="wrap-text">${esc(r.desc)}</td><td>${esc(r.method)}</td><td>${esc(r.cheque || "")}</td>
+      <td class="num ${r.type === "خروجی" ? "neg" : "pos"}">${r.type === "خروجی" ? "−" : "+"}${fmt(r.amt)}</td></tr>`).join("")}</tbody>`
+    : `<tbody><tr><td class="empty">در ۳۰ روز آینده سررسیدی نیست.</td></tr></tbody>`;
+}
+
+/* -- ریز جریان‌ها -- */
+function renderTx() {
+  const unit = document.getElementById("fUnit").value, lay = document.getElementById("txLayer").value;
+  const q = clean(document.getElementById("txSearch").value).replace(/‌/g, "");
+  let items = ALL.filter(r => (!unit || r.unit === unit) && (!lay || r.layer === lay));
+  if (q) items = items.filter(r => (r.desc + r.cat + r.unit + r.type).replace(/‌/g, "").includes(q));
+  items.sort((a, b) => a.k - b.k);
+  const shown = items.slice(0, 400);
+  document.getElementById("txCount").textContent = faN(items.length) + " ردیف" + (items.length > 400 ? " (۴۰۰ ردیف اول نمایش داده می‌شود)" : "");
+  document.getElementById("tblTx").innerHTML = shown.length ? `
+    <thead><tr><th>تاریخ</th><th>ماخذ</th><th>نوع</th><th>سرفصل</th><th>شرح</th><th>لایه</th><th class="num">مبلغ (ریال)</th></tr></thead>
+    <tbody>${shown.map(r => `<tr><td>${dStr(r)}</td><td>${esc(r.unit)}</td><td>${esc(r.type)}</td><td>${esc(r.cat)}</td><td class="wrap-text">${esc(r.desc)}</td><td>${esc(r.layer)}</td>
+      <td class="num ${r.type === "خروجی" ? "neg" : r.type === "ورودی" ? "pos" : ""}">${r.type === "خروجی" ? "−" : r.type === "ورودی" ? "+" : ""}${fmt(r.amt)}</td></tr>`).join("")}</tbody>`
+    : `<tbody><tr><td class="empty">ردیفی پیدا نشد</td></tr></tbody>`;
+}
+
+/* ---------- بارگذاری ---------- */
+function getUrl() { if (memUrl !== null) return memUrl; try { return localStorage.getItem(LS_KEY) || CONFIG.CSV_URL; } catch (e) { return CONFIG.CSV_URL; } }
+function setUrl(u) { memUrl = u; try { u ? localStorage.setItem(LS_KEY, u) : localStorage.removeItem(LS_KEY); memUrl = null; } catch (e) {} }
+function normUrl(u) {
+  u = (u || "").trim(); if (!u) return { url: "" };
+  if (/\/spreadsheets\/d\/(?!e\/)[^/]+\/(edit|view)/.test(u)) return { error: "این لینک ویرایش فایل است. از منوی File ← Share ← Publish to web لینک CSV بسازید." };
+  if (u.includes("/pubhtml")) { u = u.replace("/pubhtml", "/pub"); u += (u.includes("?") ? "&" : "?") + "output=csv"; }
+  // لینک انتشار کل فایل (بدون gid) → مستقیم برگه «داده داشبورد»
+  if (/\/pub(\?|$)/.test(u) && !/[?&]gid=/.test(u)) u += (u.includes("?") ? "&" : "?") + "gid=" + CONFIG.DATA_GID + "&single=true";
+  return { url: u };
+}
+function banner(html, kind) { const b = document.getElementById("banner"); b.className = "banner" + (html ? " show" : "") + (kind === "error" ? " error" : ""); b.innerHTML = html || ""; }
+
+async function load() {
+  const url = normUrl(getUrl()).url || ""; banner("");
+  if (!url) { isDemo = true; ALL = demoRows(); banner("این‌ها <strong>داده نمونه</strong> هستند. برای دیدن داده‌های شرکت روی «⚙ تنظیمات» بزنید و لینک CSV را وارد کنید."); after(0); return; }
+  isDemo = false; document.getElementById("sourceInfo").textContent = "در حال دریافت داده…";
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    if (/^\s*<(!doctype|html)/i.test(text)) throw new Error("خروجی CSV نیست");
+    const { rows, skipped, seen } = rowsFromCSV(text); ALL = rows;
+    if (!seen) banner("فایل خوانده شد ولی برگه «داده داشبورد» نبود. در Publish to web همین برگه را انتخاب کنید.", "error");
+    after(skipped);
+  } catch (e) {
+    banner(`داده دریافت نشد (${esc(e.message)}). لینک «Publish to web» با خروجی CSV را بررسی کنید. اگر Google از این شبکه در دسترس نیست، با شبکه دیگری امتحان کنید.`, "error");
+    document.getElementById("sourceInfo").textContent = "اتصال ناموفق";
+  }
+}
+function after(skipped) {
+  const fill = (id, vals, first) => { const el = document.getElementById(id), cur = el.value;
+    el.innerHTML = `<option value="">${first}</option>` + vals.map(v => `<option>${esc(v)}</option>`).join(""); if (vals.includes(cur)) el.value = cur; };
+  fill("fUnit", [...new Set(ALL.map(r => r.unit))].sort(), "همه ماخذها");
+  fill("txLayer", LAYER_ORDER.filter(l => ALL.some(r => r.layer === l)), "همه لایه‌ها");
+  const t = new Date().toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
+  const tk = jKey(new Date());
+  document.getElementById("sourceInfo").textContent = (isDemo ? "داده نمونه" : "متصل به Google Sheet") + " · امروز " + dStr({ y: Math.floor(tk / 10000), m: Math.floor(tk / 100) % 100, d: tk % 100 }) + " · به‌روزرسانی " + t + " · " + faN(ALL.length) + " ردیف";
+  if (skipped) banner((document.getElementById("banner").innerHTML ? document.getElementById("banner").innerHTML + "<br>" : "") + `⚠ ${faN(skipped)} ردیف نامعتبر نادیده گرفته شد.`);
+  render();
+}
+
+/* ---------- رویدادها ---------- */
+const dlg = document.getElementById("dlg");
+document.getElementById("btnSettings").onclick = () => { document.getElementById("inpUrl").value = getUrl() || ""; dlg.showModal(); };
+document.getElementById("btnClose").onclick = () => dlg.close();
+document.getElementById("btnSave").onclick = () => { const n = normUrl(document.getElementById("inpUrl").value); if (n.error) { alert(n.error); return; } setUrl(n.url); dlg.close(); load(); };
+document.getElementById("btnDemo").onclick = () => { setUrl(""); dlg.close(); load(); };
+document.getElementById("btnRefresh").onclick = load;
+["fUnit", "fHorizon", "fOverdue"].forEach(id => document.getElementById(id).addEventListener("change", render));
+document.querySelectorAll("#fScenario button").forEach(b => b.onclick = () => {
+  scenario = +b.dataset.v; document.querySelectorAll("#fScenario button").forEach(x => x.classList.toggle("on", x === b)); render(); });
+document.getElementById("txSearch").addEventListener("input", renderTx);
+document.getElementById("txLayer").addEventListener("change", renderTx);
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => ALL.length && render(), 150); });
+if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => ALL.length && render());
+setInterval(() => { if (!document.hidden && !isDemo) load(); }, CONFIG.REFRESH_MIN * 60000);
+load();
+</script>
+</body>
+</html>
